@@ -1265,6 +1265,8 @@ def main(_):
               unique_id=unique_id,
               start_logits=start_logits,
               end_logits=end_logits))
+      if len(all_results) % 100 == 0:
+          tf.logging.info("  Processed", len(all_results))
 
     output_prediction_file = os.path.join(FLAGS.output_dir, "predictions.json")
     output_nbest_file = os.path.join(FLAGS.output_dir, "nbest_predictions.json")

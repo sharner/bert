@@ -322,8 +322,34 @@ python run_classifier.py \
   --train_batch_size=32 \
   --learning_rate=2e-5 \
   --num_train_epochs=3.0 \
+  --use_tpu=True \
+  --tpu_name=$TPU_NAME \
   --output_dir=/tmp/mrpc_output/
 ```
+
+`Soren`: TPU Version:
+
+```shell
+export BERT_BASE_DIR=gs://ablox-soren-bert-tpu/uncased_L-12_H-768_A-12
+export GLUE_DIR=/home/sorenharner/bert/GLUE
+
+python run_classifier.py \
+  --task_name=MRPC \
+  --do_train=true \
+  --do_eval=true \
+  --data_dir=$GLUE_DIR/MRPC \
+  --vocab_file=$BERT_BASE_DIR/vocab.txt \
+  --bert_config_file=$BERT_BASE_DIR/bert_config.json \
+  --init_checkpoint=$BERT_BASE_DIR/bert_model.ckpt \
+  --max_seq_length=128 \
+  --train_batch_size=32 \
+  --learning_rate=2e-5 \
+  --num_train_epochs=3.0 \
+  --use_tpu=True \
+  --tpu_name=$TPU_NAME \
+  --output_dir=gs://ablox-soren-bert-tpu/MRPC/
+```
+
 
 You should see output like this:
 
@@ -371,6 +397,26 @@ python run_classifier.py \
   --output_dir=/tmp/mrpc_output/
 ```
 
+Soren: Prediction in TPU not supported!  This runs fast on a GPU machine with P100
+
+```shell
+export BERT_BASE_DIR=gs://ablox-soren-bert-tpu/uncased_L-12_H-768_A-12
+export GLUE_DIR=/home/sorenharner/bert/GLUE
+export TRAINED_CLASSIFIER=gs://ablox-soren-bert-tpu/MRPC/
+
+python run_classifier.py \
+  --task_name=MRPC \
+  --do_predict=true \
+  --data_dir=$GLUE_DIR/MRPC \
+  --vocab_file=$BERT_BASE_DIR/vocab.txt \
+  --bert_config_file=$BERT_BASE_DIR/bert_config.json \
+  --init_checkpoint=$TRAINED_CLASSIFIER \
+  --max_seq_length=128 \
+  --output_dir=gs://ablox-soren-bert-tpu/MRPC-pred/
+```
+
+
+
 ### SQuAD 1.1
 
 The Stanford Question Answering Dataset (SQuAD) is a popular question answering
@@ -413,6 +459,30 @@ python run_squad.py \
   --output_dir=/tmp/squad_base/
 ```
 
+SOREN: for TPUs
+
+```shell
+export SQUAD_DIR=/home/sorenharner/bert/SQuAD
+export OUTPUT=gs://ablox-soren-bert-tpu/SQuAD_Output/
+python run_squad.py \
+  --vocab_file=$BERT_BASE_DIR/vocab.txt \
+  --bert_config_file=$BERT_BASE_DIR/bert_config.json \
+  --init_checkpoint=$BERT_BASE_DIR/bert_model.ckpt \
+  --do_train=True \
+  --train_file=$SQUAD_DIR/train-v1.1.json \
+  --do_predict=True \
+  --predict_file=$SQUAD_DIR/dev-v1.1.json \
+  --train_batch_size=16 \
+  --learning_rate=3e-5 \
+  --num_train_epochs=2.0 \
+  --max_seq_length=384 \
+  --doc_stride=128 \
+  --use_tpu=True \
+  --tpu_name=$TPU_NAME \
+  --output_dir=$OUTPUT
+```
+
+
 The dev set predictions will be saved into a file called `predictions.json` in
 the `output_dir`:
 
@@ -433,7 +503,12 @@ If you have access to a Cloud TPU, you can train with `BERT-Large`. Here is a
 set of hyperparameters (slightly different than the paper) which consistently
 obtain around 90.5%-91.0% F1 single-system trained only on SQuAD:
 
+SOREN: notice batch size is 24 and director is the larger model.
+
 ```shell
+export SQUAD_DIR=/home/sorenharner/bert/SQuAD
+export BERT_LARGE_DIR=gs://ablox-soren-bert-tpu/uncased_L-24_H-1024_A-16
+export OUTPUT_LARGE=gs://ablox-soren-bert-tpu/SQuAD_Output_Large/
 python run_squad.py \
   --vocab_file=$BERT_LARGE_DIR/vocab.txt \
   --bert_config_file=$BERT_LARGE_DIR/bert_config.json \
@@ -447,7 +522,7 @@ python run_squad.py \
   --num_train_epochs=2.0 \
   --max_seq_length=384 \
   --doc_stride=128 \
-  --output_dir=gs://some_bucket/squad_large/ \
+  --output_dir=$OUTPUT_LARGE \
   --use_tpu=True \
   --tpu_name=$TPU_NAME
 ```
@@ -480,6 +555,7 @@ Download these to some directory `$SQUAD_DIR`.
 On Cloud TPU you can run with BERT-Large as follows:
 
 ```shell
+export OUTPUT_LARGE=gs://ablox-soren-bert-tpu/SQuAD_Output_Large_v2/
 python run_squad.py \
   --vocab_file=$BERT_LARGE_DIR/vocab.txt \
   --bert_config_file=$BERT_LARGE_DIR/bert_config.json \
@@ -493,7 +569,7 @@ python run_squad.py \
   --num_train_epochs=2.0 \
   --max_seq_length=384 \
   --doc_stride=128 \
-  --output_dir=gs://some_bucket/squad_large/ \
+  --output_dir=$OUTPUT_LARGE \
   --use_tpu=True \
   --tpu_name=$TPU_NAME \
   --version_2_with_negative=True
@@ -507,8 +583,9 @@ and the best non-null answer for each question will be in the file
 
 Run this script to tune a threshold for predicting null versus non-null answers:
 
-python $SQUAD_DIR/evaluate-v2.0.py $SQUAD_DIR/dev-v2.0.json
-./squad/predictions.json --na-prob-file ./squad/null_odds.json
+```
+python $SQUAD_DIR/evaluate-v2.0.py $SQUAD_DIR/dev-v2.0.json $SQUAD_DIR/predictions_v2.json --na-prob-file $SQUAD_DIR/null_odds.json
+```
 
 Assume the script outputs "best_f1_thresh" THRESH. (Typical values are between
 -1.0 and -5.0). You can now re-run the model to generate predictions with the
@@ -516,6 +593,8 @@ derived threshold or alternatively you can extract the appropriate answers from
 ./squad/nbest_predictions.json.
 
 ```shell
+export THRESH=-5.532413363456726
+export OUTPUT_LARGE_THRES=gs://ablox-soren-bert-tpu/SQuAD_Output_Large_v2_Thres
 python run_squad.py \
   --vocab_file=$BERT_LARGE_DIR/vocab.txt \
   --bert_config_file=$BERT_LARGE_DIR/bert_config.json \
@@ -529,7 +608,7 @@ python run_squad.py \
   --num_train_epochs=2.0 \
   --max_seq_length=384 \
   --doc_stride=128 \
-  --output_dir=gs://some_bucket/squad_large/ \
+  --output_dir=$OUTPUT_LARGE_THRES \
   --use_tpu=True \
   --tpu_name=$TPU_NAME \
   --version_2_with_negative=True \
@@ -621,7 +700,7 @@ echo 'Who was Jim Henson ? ||| Jim Henson was a puppeteer' > /tmp/input.txt
 
 python extract_features.py \
   --input_file=/tmp/input.txt \
-  --output_file=/tmp/output.jsonl \
+  --output_file=/tmp/output.json \
   --vocab_file=$BERT_BASE_DIR/vocab.txt \
   --bert_config_file=$BERT_BASE_DIR/bert_config.json \
   --init_checkpoint=$BERT_BASE_DIR/bert_model.ckpt \
