@@ -327,27 +327,27 @@ python run_classifier.py \
   --output_dir=/tmp/mrpc_output/
 ```
 
-`Soren`: TPU Version:
+`Soren`: TPU Version.   Notice we're putting the output in storage and increasing the max seq length to 512.
 
 ```shell
 export BERT_BASE_DIR=gs://ablox-soren-bert-tpu/uncased_L-12_H-768_A-12
 export GLUE_DIR=/home/sorenharner/bert/GLUE
 
-python run_classifier.py \
-  --task_name=MRPC \
+nohup python run_classifier.py \
+  --task_name=STYLO \
   --do_train=true \
   --do_eval=true \
-  --data_dir=$GLUE_DIR/MRPC \
+  --data_dir=$GLUE_DIR/STYLO \
   --vocab_file=$BERT_BASE_DIR/vocab.txt \
   --bert_config_file=$BERT_BASE_DIR/bert_config.json \
   --init_checkpoint=$BERT_BASE_DIR/bert_model.ckpt \
-  --max_seq_length=128 \
+  --max_seq_length=512 \
   --train_batch_size=32 \
   --learning_rate=2e-5 \
-  --num_train_epochs=3.0 \
+  --num_train_epochs=5.0 \
   --use_tpu=True \
   --tpu_name=$TPU_NAME \
-  --output_dir=gs://ablox-soren-bert-tpu/MRPC/
+  --output_dir=$OUTPUT_LARGE/STYLO &
 ```
 
 To train the Stanford SST-2 task:
@@ -366,7 +366,7 @@ python run_classifier.py \
   --num_train_epochs=3.0 \
   --use_tpu=True \
   --tpu_name=$TPU_NAME \
-  --output_dir=gs://ablox-soren-bert-tpu/SST2/
+  --output_dir=$OUTPUT_LARGE/SST2
 ```
 
 You should see output like this:
@@ -415,25 +415,25 @@ python run_classifier.py \
   --output_dir=/tmp/mrpc_output/
 ```
 
-Soren: Prediction in TPU not supported!  This runs fast on a GPU machine with P100
+Evaluation doesn't necessarily need to run on the TPU.  This runs fast on a GPU machine with P100.
 
 ```shell
 export BERT_BASE_DIR=gs://ablox-soren-bert-tpu/uncased_L-12_H-768_A-12
 export GLUE_DIR=/home/sorenharner/bert/GLUE
-export TRAINED_CLASSIFIER=gs://ablox-soren-bert-tpu/MRPC/
+export TRAINED_CLASSIFIER=gs://armor-soren-bert-tpu/STYLO_1000/
 
 python run_classifier.py \
-  --task_name=MRPC \
+  --task_name=STYLO \
   --do_predict=true \
-  --data_dir=$GLUE_DIR/MRPC \
+  --data_dir=$GLUE_DIR/STYLO \
   --vocab_file=$BERT_BASE_DIR/vocab.txt \
   --bert_config_file=$BERT_BASE_DIR/bert_config.json \
   --init_checkpoint=$TRAINED_CLASSIFIER \
-  --max_seq_length=128 \
-  --output_dir=gs://ablox-soren-bert-tpu/MRPC-pred/
+  --max_seq_length=512 \
+  --use_tpu=True \
+  --tpu_name=$TPU_NAME \
+  --output_dir=$OUTPUT_LARGE/STYLO_100_pred
 ```
-
-
 
 ### SQuAD 1.1
 
