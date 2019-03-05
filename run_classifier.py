@@ -498,6 +498,78 @@ class BinaryClassifyProcessor(DataProcessor):
     return examples
 
 
+class MultinomialClassifyProcessor(DataProcessor):
+
+  """multinomail classification."""
+
+  def get_train_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "train.tsv")), "train")
+
+  def get_dev_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "dev.tsv")), "dev")
+
+  def get_test_examples(self, data_dir):
+    """See base class."""
+    return self._create_examples(
+        self._read_tsv(os.path.join(data_dir, "test.tsv")), "test")
+
+  def get_labels(self):
+    """See base class."""
+    return ['SenThomTillis', 'SenJohnHoeven', 'ChrisMurphyCT', 'SenatorTester',
+       'RoyBlunt', 'SenRickScott', 'realDonaldTrump', 'SenKevinCramer',
+       'PattyMurray', 'SenWhitehouse', 'maddow', 'sendavidperdue',
+       'SenAngusKing', 'SenBobCasey', 'SenatorBurr', 'SenGaryPeters',
+       'MarshaBlackburn', 'SenJeffMerkley', 'SenToddYoung',
+       'McConnellPress', 'SenateGOP', 'RonWyden', 'BarackObama',
+       'LindseyGrahamSC', 'maziehirono', 'SenSanders', 'AOC',
+       'SenKamalaHarris', 'SenatorIsakson', 'senatemajldr',
+       'SenTomCotton', 'SenDougJones', 'SenDanSullivan', 'SenateAgDems',
+       'SenWarren', 'PressSec', 'SenSherrodBrown', 'SenMikeLee',
+       'SenCortezMasto', 'VP', 'SenTinaSmith', 'SenatorMenendez',
+       'SenatorRounds', 'SenateBudget', 'SenatorLeahy', 'SenatorHassan',
+       'SenBooker', 'SenSchumer', 'ChrisVanHollen', 'SenatorSinema',
+       'SenBillCassidy', 'SenatorCarper', 'marcorubio', 'SteveDaines',
+       'SenatorWicker', 'SenatorEnzi', 'MartinHeinrich', 'SenDuckworth',
+       'KellyannePolls', 'MikeCrapo', 'SenStabenow', 'senrobportman',
+       'SenRonJohnson', 'SenAlexander', 'JerryMoran', 'SenShelby',
+       'SenatorShaheen', 'SenatorDurbin', 'EnergyGOP', 'Sen_JoeManchin',
+       'SenJoniErnst', 'SenJackyRosen', 'SenFeinstein', 'SenMarkey',
+       'SenJohnThune', 'SenJackReed', 'JohnCornyn', 'SenBrianSchatz',
+       'SenPatRoberts', 'SenMcSallyAZ', 'SenateBanking', 'dscc',
+       'SenateDoctors', 'SenatorCollins', 'SenatorBaldwin',
+       'SenCoryGardner', 'SenatorCantwell', 'lisamurkowski', 'SenSasse',
+       'EnergyDems', 'ChrisCoons', 'SenatorRomney', 'SenatorCardin',
+       'SenBlumenthal', 'brianschatz', 'SpeakerPelosi', 'SenatorLankford',
+       'SenTedCruz', 'SenatorBraun', 'timkaine', 'SenatorRisch',
+       'SenateDems', 'SenHydeSmith', 'IndianCommittee', 'SenJohnKennedy',
+       'GrahamBlog', 'gillibrandny', 'SenHawleyPress', 'SASCMajority',
+       'SenAmyKlobuchar', 'seanhannity']
+
+  def _create_examples(self, lines, set_type):
+    """Creates examples for the training and dev sets."""
+    examples = []
+    # Skip header
+    for (i, line) in enumerate(lines[1:]):
+      # Only the test set has a header
+      if set_type == "test" and i == 0:
+        continue
+      guid = "%s-%s" % (set_type, i)
+      if set_type == "test":
+        text_a = tokenization.convert_to_unicode(line[0])
+        label = "0"
+      else:
+        text_a = tokenization.convert_to_unicode(line[0])
+        label = tokenization.convert_to_unicode(line[1])
+      examples.append(
+          InputExample(guid=guid, text_a=text_a, text_b=None, label=label))
+    return examples
+
+
+
 def convert_single_example(ex_index, example, label_list, max_seq_length,
                            tokenizer):
   """Converts a single `InputExample` into a single `InputFeatures`."""
@@ -919,6 +991,7 @@ def main(_):
       "cola": ColaProcessor,
       "sst2": Sst2Processor,
       "binclass": BinaryClassifyProcessor,
+      "mcls": MultinomialClassifyProcessor,
       "stylo": StyloProcessor,
       "mnli": MnliProcessor,
       "mrpc": MrpcProcessor,
